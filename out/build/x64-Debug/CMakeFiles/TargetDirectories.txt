@@ -1,5 +1,0 @@
-C:/Users/steven.vantende/source/repos/Scorebord/out/build/x64-Debug/CMakeFiles/edit_cache.dir
-C:/Users/steven.vantende/source/repos/Scorebord/out/build/x64-Debug/CMakeFiles/rebuild_cache.dir
-C:/Users/steven.vantende/source/repos/Scorebord/out/build/x64-Debug/Scorebord/CMakeFiles/edit_cache.dir
-C:/Users/steven.vantende/source/repos/Scorebord/out/build/x64-Debug/Scorebord/CMakeFiles/Scorebord.dir
-C:/Users/steven.vantende/source/repos/Scorebord/out/build/x64-Debug/Scorebord/CMakeFiles/rebuild_cache.dir
