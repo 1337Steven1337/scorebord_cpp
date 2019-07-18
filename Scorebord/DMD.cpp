@@ -1,17 +1,15 @@
-#include "DMD2.h"
+#include "DMD.h"
 
-DMD::DMD(byte panelsWide, byte panelsHigh, byte pin_noe, byte pin_a, byte pin_b, byte pin_sck, byte pin_clk, byte pin_r_data)
+DMD::DMD(unsigned char panelsWide, unsigned char panelsHigh, unsigned char pin_noe, unsigned char pin_a, unsigned char pin_b, unsigned char pin_sck, unsigned char pin_clk, unsigned char pin_r_data)
 	:
 	DMDFrame(panelsWide* PANEL_WIDTH, panelsHigh* PANEL_HEIGHT),
 	scan_row(0),
 	pin_noe(pin_noe),
 	pin_a(pin_a),
 	pin_b(pin_b),
-	pin_clk(pin_clk),
 	pin_sck(pin_sck),
+	pin_clk(pin_clk),
 	pin_r_data(pin_r_data),
-	default_pins(pin_noe == 9 && pin_a == 6 && pin_b == 7 && pin_sck == 8),
-	pin_other_cs(-1),
 	brightness(255)
 {
 }
@@ -42,13 +40,10 @@ void DMD::beginNoTimer()
 
 void DMD::scanDisplay()
 {
-	if (pin_other_cs >= 0 && digitalRead(pin_other_cs) != HIGH)
-		return;
 	// Rows are send out in 4 blocks of 4 (interleaved), across all panels
-
 	int rowsize = unified_width_bytes();
 
-	volatile uint8_t* rows[4] = { 
+	volatile unsigned char* rows[4] = { 
 	  bitmap + (scan_row + 0) * rowsize,
 	  bitmap + (scan_row + 4) * rowsize,
 	  bitmap + (scan_row + 8) * rowsize,
@@ -72,16 +67,16 @@ void DMD::scanDisplay()
 }
 
 
-static inline __attribute__((always_inline)) void softSPITransfer(uint8_t data) {
-	for (uint8_t i = 0; i < 8; i++) {
-		uint8_t bit = ((data & (1 << i)) == 0);
+void DMD::softSPITransfer(unsigned char data) {
+	for (unsigned char i = 8; i > 0; i--) {
+		unsigned char bit = (data & (1 << i));
 		digitalWrite(pin_r_data, bit);
 		digitalWrite(pin_clk, 1);
 		digitalWrite(pin_clk, 0);
 	}
 }
 
-void DMD::writeSPIData(volatile uint8_t* rows[4], const int rowsize)
+void DMD::writeSPIData(volatile unsigned char* rows[4], const int rowsize)
 {
 	for (int i = 0; i < rowsize; i++) {
 		softSPITransfer(*(rows[3]++));
