@@ -1,13 +1,13 @@
-#include "DMD2.h"
+#include "DMD.h"
 
-DMDFrame::DMDFrame(byte pixelsWide, byte pixelsHigh)
+DMDFrame::DMDFrame(unsigned char pixelsWide, unsigned char pixelsHigh)
 	:
 	width(pixelsWide),
 	height(pixelsHigh)
 {
 	row_width_bytes = (pixelsWide + 7) / 8;
 	height_in_panels = (pixelsHigh + PANEL_HEIGHT - 1) / PANEL_HEIGHT;
-	bitmap = (uint8_t*)malloc(bitmap_bytes());
+	bitmap = (unsigned char*)malloc(bitmap_bytes());
 	memset((void*)bitmap, 0xFF, bitmap_bytes());
 }
 
@@ -17,7 +17,7 @@ DMDFrame::DMDFrame(const DMDFrame& source) :
 	row_width_bytes(source.row_width_bytes),
 	height_in_panels(source.height_in_panels)
 {
-	bitmap = (uint8_t*)malloc(bitmap_bytes());
+	bitmap = (unsigned char*)malloc(bitmap_bytes());
 	memcpy((void*)bitmap, (void*)source.bitmap, bitmap_bytes());
 }
 
@@ -28,7 +28,7 @@ DMDFrame::~DMDFrame()
 
 void DMDFrame::swapBuffers(DMDFrame& other)
 {
-	volatile uint8_t* temp = other.bitmap;
+	volatile unsigned char* temp = other.bitmap;
 	other.bitmap = this->bitmap;
 	this->bitmap = temp;
 }
@@ -40,7 +40,7 @@ void DMDFrame::setPixel(unsigned int x, unsigned int y, DMDGraphicsMode mode)
 		return;
 
 	int byte_idx = pixelToBitmapIndex(x, y);
-	uint8_t bit = pixelToBitmask(x);
+	unsigned char bit = DMD_Pixel_Lut[x & 0x07];
 	switch (mode) {
 	case GRAPHICS_ON:
 		bitmap[byte_idx] &= ~bit; // and with the inverse of the bit - so
@@ -68,9 +68,19 @@ bool DMDFrame::getPixel(unsigned int x, unsigned int y)
 	if (x >= width || y >= height)
 		return false;
 	int byte_idx = pixelToBitmapIndex(x, y);
-	uint8_t bit = pixelToBitmask(x);
+	unsigned char bit = DMD_Pixel_Lut[x & 0x07];
 	bool res = !(bitmap[byte_idx] & bit);
 	return res;
+}
+
+void DMDFrame::printDisplay()
+{
+	for (int i = 0; i < height; i++) {
+		for (int j = 0; j < width; j++) {
+			std::cout << (int)getPixel(j, i) << ", ";
+		}
+		std::cout << std::endl;
+	}
 }
 
 void DMDFrame::movePixels(unsigned int from_x, unsigned int from_y,
@@ -149,7 +159,6 @@ void DMDFrame::copyFrame(DMDFrame& from, unsigned int left, unsigned int top)
 	}
 }
 
-// Set the entire screen
 void DMDFrame::fillScreen(bool on)
 {
 	memset((void*)bitmap, on ? 0 : 0xFF, bitmap_bytes());
@@ -299,15 +308,7 @@ void DMDFrame::marqueeScrollY(int scrollBy) {
 	}
 }
 
-void DMDFrame::swapBuffers(DMDFrame& other)
-{
-	volatile uint8_t* temp = other.bitmap;
-	other.bitmap = this->bitmap;
-	this->bitmap = temp;
-}
-
-/* Lookup table for DMD pixel locations, marginally faster than bitshifting */
-const PROGMEM uint8_t DMD_Pixel_Lut[] = {
+const unsigned char DMD_Pixel_Lut[] = {
   0x80,   //0, bit 7
   0x40,   //1, bit 6
   0x20,   //2. bit 5
@@ -317,3 +318,4 @@ const PROGMEM uint8_t DMD_Pixel_Lut[] = {
   0x02,   //6, bit 1
   0x01    //7, bit 0
 };
+

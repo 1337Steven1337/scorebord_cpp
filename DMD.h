@@ -1,6 +1,14 @@
 #ifndef DMD2_H
 #define DMD2_H
 
+#include <wiringPi.h>
+#include <stddef.h>
+#include <string.h>
+#include <cstdlib>
+#include <iostream>
+
+using namespace std;
+
 // Dimensions of a single display
 const unsigned int PANEL_WIDTH = 32;
 const unsigned int PANEL_HEIGHT = 16;
@@ -25,7 +33,7 @@ template<typename T> static inline void ensureOrder(T& a, T& b)
 	if (b < a) swap(a, b);
 }
 
-extern const uint8_t DMD_Pixel_Lut[];
+extern const unsigned char DMD_Pixel_Lut[];
 
 
 //Pixel/graphics writing modes
@@ -58,7 +66,7 @@ inline static DMDGraphicsMode inverseMode(DMDGraphicsMode mode) {
 class DMDFrame
 {
 public:
-	DMDFrame(byte pixelsWide, byte pixelsHigh);
+	DMDFrame(unsigned char pixelsWide, unsigned char pixelsHigh);
 	DMDFrame(const DMDFrame& source);
 	virtual ~DMDFrame();
 
@@ -67,6 +75,9 @@ public:
 
 	// Get status of a single LED
 	bool getPixel(unsigned int x, unsigned int y);
+
+	//Print display
+	void printDisplay();
 
 	// Move a region of pixels from one area to another
 	void movePixels(unsigned int from_x, unsigned int from_y,
@@ -97,36 +108,32 @@ public:
 
 	void swapBuffers(DMDFrame& other);
 
-	const byte width; // in pixels
-	const byte height; // in pixels
+	const unsigned char width; // in pixels
+	const unsigned char height; // in pixels
 protected:
-	volatile uint8_t* bitmap;
-	byte row_width_bytes; // width in bitmap, bit-per-pixel rounded up to nearest byte
-	byte height_in_panels; // in panels
+	volatile unsigned char* bitmap;
+	unsigned char row_width_bytes; // width in bitmap, bit-per-pixel rounded up to nearest byte
+	unsigned char height_in_panels; // in panels
 
-	uint8_t* font;
+	unsigned char* font;
 
+	// total bytes in the bitmap
 	inline size_t bitmap_bytes() {
-		// total bytes in the bitmap
 		return row_width_bytes * height;
 	}
+	// controller sees all panels as end-to-end, so bitmap arranges it that way
 	inline size_t unified_width_bytes() {
-		// controller sees all panels as end-to-end, so bitmap arranges it that way
 		return row_width_bytes * height_in_panels;
 	}
+
+	// Panels seen as stretched out in a row for purposes of finding index
 	inline int pixelToBitmapIndex(unsigned int x, unsigned int y) {
-		// Panels seen as stretched out in a row for purposes of finding index
-		uint8_t panel = (x / PANEL_WIDTH) + ((width / PANEL_WIDTH) * (y / PANEL_HEIGHT));
+		unsigned char panel = (x / PANEL_WIDTH) + ((width / PANEL_WIDTH) * (y / PANEL_HEIGHT));
 		x = (x % PANEL_WIDTH) + (panel * PANEL_WIDTH);
 		y = y % PANEL_HEIGHT;
 		int res = x / 8 + (y * unified_width_bytes());
 		return res;
 	}
-	inline uint8_t pixelToBitmask(unsigned int x) {
-		int res = pgm_read_byte(DMD_Pixel_Lut + (x & 0x07));
-		return res;
-	}
-
 	template<typename T> inline void clamp_xy(T& x, T& y) {
 		clamp(x, (T)0, (T)width - 1);
 		clamp(y, (T)0, (T)width - 1);
@@ -136,19 +143,22 @@ protected:
 class DMD : public DMDFrame
 {
 public:
-	DMD(byte panelsWide, byte panelsHigh, byte pin_noe, byte pin_a, byte pin_b, byte pin_sck,
-		byte pin_clk, byte pin_r_data);
+	DMD(unsigned char panelsWide, unsigned char panelsHigh, unsigned char pin_noe, unsigned char pin_a, unsigned char pin_b, unsigned char pin_sck,
+		unsigned char pin_clk, unsigned char pin_r_data);
 	void beginNoTimer();
 	void scanDisplay();
-protected:
-	void writeSPIData(volatile uint8_t* rows[4], const int rowsize);
+	void softSPITransfer(unsigned char data);
+	inline void setBrightness(unsigned char b){
+		brightness = b;
+	}
 private:
-	volatile byte scan_row;
-	byte pin_noe;
-	byte pin_a;
-	byte pin_b;
-	byte pin_sck;
-	byte pin_clk;
-	byte pin_r_data;
-	uint8_t brightness;
+	volatile unsigned char scan_row;
+	unsigned char pin_noe;
+	unsigned char pin_a;
+	unsigned char pin_b;
+	unsigned char pin_sck;
+	unsigned char pin_clk;
+	unsigned char pin_r_data;
+	unsigned char brightness;
 };
+#endif
