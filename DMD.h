@@ -1,7 +1,7 @@
 #ifndef DMD2_H
 #define DMD2_H
 
-#include <wiringPi.h>
+#include "RPI.h"
 #include <stddef.h>
 #include <string.h>
 #include <cstdlib>
@@ -145,9 +145,10 @@ class DMD : public DMDFrame
 public:
 	DMD(unsigned char panelsWide, unsigned char panelsHigh, unsigned char pin_noe, unsigned char pin_a, unsigned char pin_b, unsigned char pin_sck,
 		unsigned char pin_clk, unsigned char pin_r_data);
-	void beginNoTimer();
 	void scanDisplay();
 	void softSPITransfer(unsigned char data);
+	void setupPinout(unsigned char pin);
+	void digitalWrite(unsigned char pin, unsigned char value);
 	inline void setBrightness(unsigned char b){
 		brightness = b;
 	}

@@ -12,30 +12,31 @@ DMD::DMD(unsigned char panelsWide, unsigned char panelsHigh, unsigned char pin_n
 	pin_r_data(pin_r_data),
 	brightness(255)
 {
-}
-
-void DMD::beginNoTimer()
-{
-	digitalWrite(pin_clk, LOW);
-	pinMode(pin_clk, OUTPUT);
-
-	digitalWrite(pin_r_data, LOW);
-	pinMode(pin_r_data, OUTPUT);
-
-	digitalWrite(pin_noe, LOW);
-	pinMode(pin_noe, OUTPUT);
-
-	digitalWrite(pin_a, LOW);
-	pinMode(pin_a, OUTPUT);
-
-	digitalWrite(pin_b, LOW);
-	pinMode(pin_b, OUTPUT);
-
-	digitalWrite(pin_sck, LOW);
-	pinMode(pin_sck, OUTPUT);
+	setupPinout(pin_clk);
+	setupPinout(pin_r_data);
+	setupPinout(pin_noe);
+	setupPinout(pin_a);
+	setupPinout(pin_b);
+	setupPinout(pin_sck);
 
 	clearScreen();
 	scanDisplay();
+}
+
+void DMD::setupPinout(unsigned char pin) {
+	INP_GPIO(pin);
+	OUT_GPIO(pin);
+}
+
+
+void DMD::digitalWrite(unsigned char pin, unsigned char value) {
+	if (value) {
+		GPIO_SET = 1 << pin;
+	}
+	else 
+	{
+		GPIO_CLR = 1 << pin;
+	}
 }
 
 void DMD::scanDisplay()
@@ -59,18 +60,15 @@ void DMD::scanDisplay()
 		softSPITransfer(*(rows[0]++));
 	}
 
-	digitalWrite(pin_noe, LOW);
-	digitalWrite(pin_sck, HIGH); // Latch DMD shift register output
-	digitalWrite(pin_sck, LOW); // (Deliberately left as digitalWrite to ensure decent latching time)
+	digitalWrite(pin_noe, 0);
+	digitalWrite(pin_sck, 1); // Latch DMD shift register output
+	digitalWrite(pin_sck, 0); // (Deliberately left as digitalWrite to ensure decent latching time)
 
 	digitalWrite(pin_a, scan_row & 0x01);
 	digitalWrite(pin_b, scan_row & 0x02);
 	scan_row = (scan_row + 1) % 4;
 
-	if (brightness == 255)
-		digitalWrite(pin_noe, HIGH);
-	else
-		analogWrite(pin_noe, brightness);
+	digitalWrite(pin_noe, 1);
 }
 
 
